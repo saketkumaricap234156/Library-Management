@@ -92,6 +92,7 @@ class Usercarthandler(BaseHandler):
                 book_details = await db.ebooks.find_one({"_id": ObjectId(book_id)})
                 if book_details:
                     books_details.append({
+                        "_id":str(book_details.get('_id')),
                         "title": book_details.get('title'),
                         "author": book_details.get('author'),
                         "description":book_details.get('description'),

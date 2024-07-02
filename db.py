@@ -39,11 +39,11 @@ async def create_book(manager_id, library_id, category_id, title, sub_title, aut
     result = await db.books.insert_one({'manager_id': ObjectId(manager_id), 'library_id': ObjectId(library_id ), 'category_id':ObjectId(category_id), 'title': title, 'sub_title':sub_title, 'author': author, 'description':description, 'price':int(price), 'rating':rating, 'image_url':image_url})
     return str(result.inserted_id)
 
-async def create_manager(library_id, admin_id, name, email, mobile, password):
+async def create_manager(library_id, profile_url, name, email, mobile, password):
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     result = await db.managers.insert_one({
-        'admin_id': ObjectId(admin_id),
         'library_id':ObjectId(library_id),
+        'profile_url':profile_url,
         'name': name,
         'email': email,
         'mobile': mobile,
@@ -55,8 +55,8 @@ async def get_libraries_by_admin(admin_id):
     libraries = await db.libraries.find({'admin_id': ObjectId(admin_id)}).to_list(length=None)
     return [to_json(library) for library in libraries]
 
-async def get_books_by_manager(manager_id):
-    books = await db.books.find({'manager_id': ObjectId(manager_id)}).to_list(length=None)
+async def get_books_by_id(book_id):
+    books = await db.books.find({'_id': ObjectId(book_id)}).to_list(length=None)
     return [to_json(book) for book in books]
 
 async def get_managers_by_library(library_id):

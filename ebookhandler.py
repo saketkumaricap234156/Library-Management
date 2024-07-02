@@ -51,7 +51,7 @@ class eBookHandler(BaseHandler):
         try:
             ebook_id=self.get_query_argument("ebook_id")
             data=json.loads(self.request.body)
-            category_id=data.get('category_id')
+            # category_id=data.get('category_id')
             title=data.get('title')
             sub_title=data.get('sub_title')
             author=data.get('author')
@@ -67,7 +67,7 @@ class eBookHandler(BaseHandler):
         # }
             result = await db.ebooks.update_one(
             {'_id': ObjectId(ebook_id)},
-            {'$set': {'title': title, 'author': author, 'description':description, 'category_id':ObjectId(category_id), 'image_url':image_url, 'sub_title':sub_title, 'price':int(price)}}
+            {'$set': {'title': title, 'author': author, 'description':description, 'image_url':image_url, 'sub_title':sub_title, 'price':int(price)}}
         )
             if result.matched_count:
                   self.write({"status": "success", "message": "eBook details updated successfully."})
@@ -95,6 +95,7 @@ class eBookHandler(BaseHandler):
                     category_books[category_name] = []
 
                 category_books[category_name].append({
+                    "_id":str(ebook['_id']),
                     'title': ebook['title'],
                     'sub_title': ebook.get('sub_title', ''),
                     'author': ebook['author'],

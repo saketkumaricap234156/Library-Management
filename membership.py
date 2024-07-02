@@ -3,8 +3,9 @@ import json
 from db import create_membership, get_membership
 from db import db
 from bson import ObjectId
+from RegisterHandler import BaseHandler
 
-class Membershiphandler(tornado.web.RequestHandler):
+class Membershiphandler(BaseHandler):
     async def post(self):
         try:
             data = json.loads(self.request.body)
@@ -23,32 +24,17 @@ class Membershiphandler(tornado.web.RequestHandler):
         
     async def get(self):
         try:
-        #     membership_id = self.get_argument('membership_id')
-             
-        #     user = await db.users.find_one(
-        #          {'_id': ObjectId(membership_id)}, 
-        #          {'name': 1, 'mobile': 1, 'email': 1}
-        #      )
-             
-        #     if not user:
-        #         self.set_status(404)
-        #         self.write({"error": "User not found"})
-        #         return
+            cursor = db.membership.find({}, {'type': 1, 'price': 1, 'duration_in_months': 1, 'benefits': 1})
+            memberships = []
+            async for document in cursor:
+                document['_id'] = str(document['_id'])
+                memberships.append(document)
             
-        #     user_details = {
-        #     "name": user['name'],
-        #     "mobile": user['mobile'],
-        #     "email": user['email']
-        # }
-        #     self.write(user_details)
-        
-            memberships = await db.membership.find({}, {'_id': 0, 'type': 1, 'price': 1, 'duration_in_months': 1, 'benefits': 1}).to_list(length=None)
             self.write({'memberships': memberships})
          
         except Exception as e:
             self.set_status(500)
-            self.write({"status": "error", "message": str(e)}) 
-            
+            self.write({"status": "error", "message": str(e)})
     
     async def put(self):
         membership_id = self.get_argument('membership_id')

@@ -65,35 +65,36 @@ class RegisterHandler(BaseHandler):
                 self.set_status(404)
                 self.write({"error": "User not found"})
                 return
-            
-            # def format_date(date):
-            #     if isinstance(date, datetime):
-            #         return date.isoformat()
-            #     return date
 
             membership_history = await db.membershiphistory.find_one(
                 {'user_id': ObjectId(user_id)},
                 {'membership_id': 1, 'Activation_date': 1, 'End_Date': 1, 'isactive': 1}
             )
-
+            
             if membership_history:
-                membership = await db.membership.find_one(
-                    {'_id': membership_history['membership_id']},
-                    {'type': 1}
-                )
+                if membership_history['isactive']:
+                    membership = await db.membership.find_one(
+                        {'_id': membership_history['membership_id']},
+                        {'type': 1, 'duration_in_months': 1, 'price': 1}
+                    )
 
-                if membership:
-                    membership_details = {
-                        "type": membership['type'],
-                        "Activation_date": membership_history['Activation_date'].strftime('%Y-%m-%d') if membership_history['Activation_date'] else None,
-                        "End_Date": membership_history['End_Date'].strftime('%Y-%m-%d') if membership_history['End_Date'] else None,
-                        "isactive": membership_history['isactive']
-                    }
+                    if membership:
+                        membership_details = {
+                            "type": membership['type'],
+                            "duration_in_months": membership['duration_in_months'],
+                            "price": membership['price'],
+                            "Activation_date": membership_history['Activation_date'].strftime('%Y-%m-%d') if membership_history['Activation_date'] else None,
+                            "End_Date": membership_history['End_Date'].strftime('%Y-%m-%d') if membership_history['End_Date'] else None,
+                            "isactive": membership_history['isactive']
+                        }
+                    else:
+                        membership_details = {"error": "Membership type not found"}
                 else:
-                    membership_details = {"error": "Membership type not found"}
+                    membership_details = {}
             else:
-                membership_details = {"error": "Membership history not found"}
+                membership_details = {}
 
+            
             user_details = {
                 "name": user['name'],
                 "mobile": user['mobile'],
@@ -146,5 +147,51 @@ class RegisterHandler(BaseHandler):
             else:
                 self.set_status(404)
                 self.write({'error': 'User not found'})
+                
+class Updateuserhandler(BaseHandler):
+    async def put(self):
+        try:
+            user_id = self.get_argument('user_id')
+            data = tornado.escape.json_decode(self.request.body)
+    
+            if 'old_password' in data:
+                user = await db.users.find_one({'_id': ObjectId(user_id)})
+                if user:
+                    old_password = data['old_password']
+                    user_password = user.get('password')
+            
+                    if bcrypt.checkpw(old_password.encode('utf-8'), user_password):
+                        update_data = {}
+                        if 'name' in data:
+                            update_data['name'] = data['name']
+                        if 'mobile' in data:
+                            update_data['mobile'] = data['mobile']
+                        if 'email' in data:
+                            update_data['email'] = data['email']
+                
+                        update_result = await db.users.update_one(
+                            {'_id': ObjectId(user_id)},
+                            {'$set': update_data}
+                            )
+                
+                        if update_result.modified_count:
+                            self.write({'success': True})
+                        else:
+                            self.set_status(500)
+                            self.write({'error': 'User details update failed'})
+                    else:
+                        self.set_status(401)
+                        self.write({'error': 'Password incorrect'})
+                else:
+                    self.set_status(404)
+                    self.write({'error': 'User not found'})
+            else:
+                self.set_status(400)
+                self.write({'error': 'Old password required for updates'})
+                
+        except Exception as e:
+            self.set_status(500)
+            self.write({"status": "error", "message": str(e)})
+                    
                 
                 

@@ -3,14 +3,15 @@ import json
 from json import dumps
 from db import db
 from bson import ObjectId
+from tornado.escape import json_encode
 from db import create_manager, get_managers_by_library
-
-class ManagerHandler(tornado.web.RequestHandler):
+from RegisterHandler import BaseHandler
+class ManagerHandler(BaseHandler):
     async def post(self):
         try:
             data = json.loads(self.request.body)
-            admin_id = data['admin_id']
             library_id = data['library_id']
+            profile_url = data.get("profile_url"),
             name = data['name']
             email = data['email']
             mobile = data['mobile']
@@ -20,13 +21,14 @@ class ManagerHandler(tornado.web.RequestHandler):
             self.write({'error': 'Invalid request format'})
             return
 
-        manager_id = await create_manager(library_id, admin_id, name, email, mobile, password)
+        manager_id = await create_manager(library_id, profile_url, name, email, mobile, password)
         self.write({'status': 'success', 'manager_id': manager_id})   
         
     async def put(self):
         try:
             manager_id=self.get_argument("manager_id")
             data = json.loads(self.request.body)
+            profile_url=data['profile_url']
             name = data['name']
             email = data['email']
             mobile = data['mobile']
@@ -37,7 +39,7 @@ class ManagerHandler(tornado.web.RequestHandler):
 
         result = await db.managers.update_one(
             {'_id': ObjectId(manager_id)},
-            {'$set': {'name': name, 'email': email, 'mobile': mobile}}
+            {'$set': {'name': name, 'profile_url':profile_url, 'email': email, 'mobile': mobile}}
         )
 
         if result.modified_count == 1:
@@ -46,6 +48,25 @@ class ManagerHandler(tornado.web.RequestHandler):
             self.set_status(404)
             self.write({'status': 'error', 'message': 'Manager not found'})
             
+    async def get(self):
+        try:
+            managers_cursor = db.managers.find({})
+            managers = []
+            async for manager in managers_cursor:
+                managers.append({
+                    "_id":str(manager.get("_id")),
+                    "name": manager.get("name"),
+                    "email": manager.get("email"),
+                    "mobile": manager.get("mobile"),
+                    "library_id": str(manager.get("library_id")),
+                    "profile_url": manager.get("profile_url")
+                })
+            self.write(dumps(managers))
+                
+        except Exception as e:
+            self.set_status(500)
+            self.write({"status": "error", "message": str(e)})
+                 
     async def delete(self, manager_id):
         result = await db.managers.delete_one({'_id': ObjectId(manager_id)})
         if result.deleted_count == 1:

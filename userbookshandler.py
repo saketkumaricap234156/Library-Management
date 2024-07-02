@@ -64,6 +64,7 @@ class UsereBooksHandler(BaseHandler):
             
             query = {}
             projection = {'title': 1, 'sub_title':1, 'author': 1, 'rating':1, 'description':1, 'price':1, 'image_url':1, '_id': 1}
+                
             if title:
                 query['title'] = {'$regex': title, '$options': 'i'}
             if author:
@@ -93,9 +94,9 @@ class UsereBooksHandler(BaseHandler):
 class UsereBooksHandlerbyid(BaseHandler):
     async def get(self):
         try:
-            title=self.get_argument('title')
+            book_id=self.get_argument('book_id')
             
-            book = await db.ebooks.find_one({"title":title})
+            book = await db.ebooks.find_one({"_id":ObjectId(book_id)})
             if book:
                 self.write({
                     "_id":str(book.get("_id")),

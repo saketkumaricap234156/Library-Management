@@ -71,17 +71,18 @@ class CategoryHandler(BaseHandler):
     
     async def get(self):
         try:
-            cursor = db.category.find({}, {"_id": 0, "category_name": 1})
+            excluded_categories = ["Popular Books", "Best Seller", "Recommended", "Featured Books"]
+            cursor = db.category.find({"category_name": {"$nin": excluded_categories}}, {"_id": 0, "category_name": 1})
             category_names = []
             async for document in cursor:
                 category_names.append(document["category_name"])
-                
             
             self.write(json.dumps(category_names))
             
         except Exception as e:
             self.set_status(500)
-            self.write({"error": str(e)})    
+            self.write({"error": str(e)})
+   
             
             
                      
